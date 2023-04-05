@@ -6,14 +6,13 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using OrderApiFun.Core.Middlewares;
 using OrderApiFun.Core.Services;
+using OrderDbLib.Entities;
 using OrderLib;
-using OrderLib.Entities;
 
 namespace OrderApiFun.Funcs
 {
     public class LoginFunc
     {
-        private const int JwtValidHours = 12;
         private JwtTokenService JwtService { get; }
         private UserManager<User> UserManager { get; }
         public LoginFunc(JwtTokenService jwtService, UserManager<User> userManager)

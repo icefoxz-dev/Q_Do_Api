@@ -3,11 +3,11 @@ using Mapster;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Azure.Functions.Worker;
 using OrderApiFun.Core.Services;
-using OrderLib.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
 using OrderApiFun.Core.Middlewares;
-using OrderDtoLib;
+using OrderDbLib.Entities;
+using OrderHelperLib;
 using Utls;
 
 namespace OrderApiFun.Funcs

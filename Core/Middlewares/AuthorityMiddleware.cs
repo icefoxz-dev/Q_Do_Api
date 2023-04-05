@@ -7,16 +7,9 @@ using Newtonsoft.Json.Linq;
 using OrderApiFun.Core.Services;
 using OrderApiFun.Core.Tokens;
 using OrderApiFun.Funcs;
-using static OrderApiFun.Core.Tokens.TokenValidation;
 
 namespace OrderApiFun.Core.Middlewares
 {
-    public class Auth
-    {
-        public const string UserId = "userId";
-        public const string DeliverManId = "deliverManId";
-        public const string AdminId = "adminId";
-    }
     public class AuthorityMiddleware : IFunctionsWorkerMiddleware
     {
         private const string AuthorizationHeader = "Authorization";
@@ -113,13 +106,13 @@ namespace OrderApiFun.Core.Middlewares
         {
             switch (result.Result)
             {
-                case Results.Valid:
+                case TokenValidation.Results.Valid:
                     context.Items[Auth.UserId] = result.Principal.Identity.Name;
                     break;
-                case Results.Expired:
-                case Results.Error:
+                case TokenValidation.Results.Expired:
+                case TokenValidation.Results.Error:
                 {
-                    var message = result.Result == Results.Expired
+                    var message = result.Result == TokenValidation.Results.Expired
                         ? "Token expired"
                         : "Invalid token";
                     // 如果令牌无效，设置一个适当的响应

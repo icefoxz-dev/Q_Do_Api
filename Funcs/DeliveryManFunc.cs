@@ -1,10 +1,10 @@
 ﻿using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Azure.Functions.Worker;
 using OrderApiFun.Core.Services;
-using OrderLib.Entities;
 using System.Net;
 using Microsoft.AspNetCore.Identity;
 using OrderApiFun.Core.Middlewares;
+using OrderDbLib.Entities;
 
 namespace OrderApiFun.Funcs;
 

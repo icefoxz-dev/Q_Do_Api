@@ -1,15 +1,15 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.5.33424.131
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.33214.272
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OrderApiFun", "OrderApiFun.csproj", "{FE1F15A6-94F1-4FD1-91AA-A0B83C53BA71}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OrderLib", "..\OrderLib\OrderLib.csproj", "{CC6D976A-8CE5-48AB-A49E-9FC950739EE8}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OrderDbLib", "..\OrderDbLib\OrderDbLib.csproj", "{CC6D976A-8CE5-48AB-A49E-9FC950739EE8}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EFConsole", "..\EFConsole\EFConsole.csproj", "{82CDA707-1C8A-42FA-A39B-2BFF716865FD}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OrderDtoLib", "..\OrderDtoLib\OrderDtoLib.csproj", "{7A5C0BB3-0928-49A9-B390-A7BD79C50CDB}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OrderHelperLib", "..\OrderHelperLib\OrderHelperLib.csproj", "{7A5C0BB3-0928-49A9-B390-A7BD79C50CDB}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

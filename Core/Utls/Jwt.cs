@@ -3,7 +3,7 @@ using System.Security.Claims;
 using System.Text;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
-using OrderLib.Entities;
+using OrderDbLib.Entities;
 
 namespace OrderApiFun.Core.Utls;
 

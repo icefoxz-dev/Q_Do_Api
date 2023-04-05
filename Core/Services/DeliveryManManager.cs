@@ -1,6 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using OrderLib;
-using OrderLib.Entities;
+using OrderDbLib;
+using OrderDbLib.Entities;
 
 namespace OrderApiFun.Core.Services;
 

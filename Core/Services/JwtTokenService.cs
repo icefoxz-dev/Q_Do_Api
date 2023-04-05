@@ -4,8 +4,8 @@ using System.Text;
 using Azure.Identity;
 using Microsoft.IdentityModel.Tokens;
 using OrderApiFun.Core.Tokens;
+using OrderDbLib.Entities;
 using OrderLib;
-using OrderLib.Entities;
 
 namespace OrderApiFun.Core.Services;
 
@@ -41,7 +41,7 @@ public class JwtTokenService
         }
     }
 
-    public Task<string> GenerateRefreshToken(User user)
+    public string GenerateRefreshToken(User user)
     {
         var claims = new[]
         {
@@ -59,7 +59,7 @@ public class JwtTokenService
             SigningCredentials = new SigningCredentials(SymmetricSecurityKey, SecurityAlgorithms.HmacSha256Signature)
         };
         var token = JwtSecurityTokenHandler.CreateToken(refreshToken);
-        return Task.FromResult(JwtSecurityTokenHandler.WriteToken(token));
+        return JwtSecurityTokenHandler.WriteToken(token);
     }
 
     public async Task<bool> ValidateRefreshTokenAsync(string token, string username)

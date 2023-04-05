@@ -4,11 +4,10 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using OrderApiFun.Core.Middlewares;
 using OrderApiFun.Core.Services;
-using OrderLib;
-using OrderLib.Entities;
+using OrderDbLib;
+using OrderDbLib.Entities;
 
 
 var host = new HostBuilder()

@@ -1,6 +1,4 @@
-﻿using OrderDtoLib;
-using OrderLib.Entities;
-using Utls;
+﻿using Utls;
 
 namespace OrderApiFun.DtoMapping
 {

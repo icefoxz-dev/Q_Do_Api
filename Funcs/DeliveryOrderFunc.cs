@@ -8,6 +8,7 @@ using Microsoft.Extensions.Logging;
 using OrderApiFun.Core.Middlewares;
 using OrderDbLib.Entities;
 using OrderHelperLib;
+using OrderHelperLib.DtoModels.DeliveryOrders;
 using Utls;
 
 namespace OrderApiFun.Funcs
@@ -32,6 +33,7 @@ namespace OrderApiFun.Funcs
             FunctionContext context)
         {
             var log = context.GetLogger(nameof(User_CreateDeliveryOrder));
+            var bag = await req.GetBagAsync();
             //test Instance:
             //var dto = InstanceTestDeliverDto();
             //log.LogWarning(Json.Serialize(dto));
@@ -39,10 +41,10 @@ namespace OrderApiFun.Funcs
             log.LogInformation("C# HTTP trigger function processed a request.");
             var userId = context.Items[Auth.UserId].ToString();
             // Deserialize the request body to DeliveryOrder
-            DeliveryOrderDto? orderDto;
+            DeliveryOrderDto? orderDto = null;
             try
             {
-                orderDto = await req.ReadFromJsonAsync<DeliveryOrderDto>();
+                orderDto = bag.Get<DeliveryOrderDto>(0);
             }
             catch (Exception e)
             {
@@ -54,51 +56,11 @@ namespace OrderApiFun.Funcs
 
             // Add the new order to the database using the DeliveryOrderService
             var order = orderDto.Adapt<DeliveryOrder>();
-            var newDo = await DoService.CreateDeliveryOrderAsync(userId,order, log);
+            var newDo = await DoService.CreateDeliveryOrderAsync(userId, order, log);
             var createdResponse = req.CreateResponse(HttpStatusCode.Created);
             //createdResponse.Headers.Add("Location", $"deliveryorder/{newOrder.Id}");
-            await createdResponse.WriteAsJsonAsync(newDo.Adapt<DeliveryOrderDto>());
+            await createdResponse.WriteAsJsonAsync(DataBag.Serialize(newDo.Adapt<DeliveryOrderDto>()));
             return createdResponse;
-
-            DeliveryOrderDto InstanceTestDeliverDto()
-            {
-                var d = new DeliveryOrderDto();
-                d.ItemInfo = new ItemInfoDto
-                {
-                    Height = 1.5f,
-                    Length = 3f,
-                    Quantity = 1,
-                    Weight = 5f,
-                    Width = 1.2f,
-                    Remark = "Help me post!"
-                };
-                d.StartCoordinates = new CoordinatesDto
-                {
-                    Address = "10 Long Lama",
-                    Latitude = 3.211,
-                    Longitude = 123.1213
-                };
-                d.EndCoordinates = new CoordinatesDto
-                {
-                    Address = "112 Long Lama",
-                    Latitude = 3.12,
-                    Longitude = 173.1233
-                };
-                d.ReceiverInfo = new ReceiverInfoDto
-                {
-                    Name = "Abun",
-                    PhoneNumber = "0123456495"
-                };
-                d.DeliveryInfo = new DeliveryInfoDto
-                {
-                    Distance = 10,
-                    Price = 20,
-                    Weight = 16
-                };
-                d.Status = DeliveryOrderStatus.Closed;
-                return d;
-            }
-
         }
 
 

@@ -21,8 +21,8 @@
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="6.27.0" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\Q_PR_C\ParcelRider\Assets\3rd\OrderHelperLib~\OrderHelperLib.csproj" />
     <ProjectReference Include="..\OrderDbLib\OrderDbLib.csproj" />
-    <ProjectReference Include="..\OrderHelperLib\OrderHelperLib.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Update="host.json">

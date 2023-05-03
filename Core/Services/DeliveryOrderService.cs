@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using OrderDbLib;
 using OrderDbLib.Entities;
+using OrderHelperLib.DtoModels.DeliveryOrders;
 using Utls;
 
 namespace OrderApiFun.Core.Services
@@ -103,7 +104,7 @@ namespace OrderApiFun.Core.Services
             }
 
             // 验证订单状态的顺序限制
-            if (!IsValidStatusTransition(order.Status, newStatus))
+            if (!IsValidStatusTransition((DeliveryOrderStatus)order.Status, newStatus))
             {
                 throw new InvalidOperationException($"Invalid status transition: {order.Status}->{newStatus}");
             }
@@ -142,7 +143,7 @@ namespace OrderApiFun.Core.Services
             }
 
             // 验证订单状态的顺序限制
-            if (!IsValidStatusTransition(order.Status, newStatus))
+            if (!IsValidStatusTransition((DeliveryOrderStatus)order.Status, newStatus))
             {
                 throw new InvalidOperationException($"Invalid status transition: {order.Status}->{newStatus}");
             }
@@ -187,7 +188,7 @@ namespace OrderApiFun.Core.Services
                 throw new ArgumentException("Delivery order not found.");
             deliveryOrder.DeliveryManId = deliveryMan.Id;
             deliveryOrder.DeliveryMan = deliveryMan;
-            deliveryOrder.Status = DeliveryOrderStatus.Accepted;
+            deliveryOrder.Status = (int)DeliveryOrderStatus.Accepted;
             deliveryOrder.UpdateFileTimeStamp();
             await Db.SaveChangesAsync();
         }
@@ -207,7 +208,7 @@ namespace OrderApiFun.Core.Services
                 throw new ArgumentException("Delivery order not found.");
             }
 
-            deliveryOrder.Status = newStatus;
+            deliveryOrder.Status = (int)newStatus;
             deliveryOrder.UpdateFileTimeStamp();
             await Db.SaveChangesAsync();
         }

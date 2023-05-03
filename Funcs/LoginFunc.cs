@@ -7,7 +7,9 @@ using Newtonsoft.Json;
 using OrderApiFun.Core.Middlewares;
 using OrderApiFun.Core.Services;
 using OrderDbLib.Entities;
-using OrderLib;
+using OrderHelperLib;
+using OrderHelperLib.DtoModels.Users;
+using Utls;
 
 namespace OrderApiFun.Funcs
 {
@@ -21,13 +23,6 @@ namespace OrderApiFun.Funcs
             UserManager = userManager;
         }
 
-        public class RegisterModel
-        {
-            public string Username { get; set; }
-            public string Email { get; set; }
-            public string Password { get; set; }
-        }
-        
         [Function(nameof(Anonymous_RegisterApi))]
         public async Task<HttpResponseData> Anonymous_RegisterApi(
             [HttpTrigger(AuthorizationLevel.Function, "post", Route = null)]
@@ -35,7 +30,8 @@ namespace OrderApiFun.Funcs
             FunctionContext context)
         {
             var log = context.GetLogger(nameof(Anonymous_RegisterApi));
-            var data = await req.ReadFromJsonAsync<RegisterModel>();
+            var b = await req.GetBagAsync();
+            var data = b.Get<RegisterDto>(0);
 
             var user = new User { UserName = data.Username, Email = data.Email };
             var result = await UserManager.CreateAsync(user, data.Password);
@@ -43,23 +39,32 @@ namespace OrderApiFun.Funcs
             if (!result.Succeeded)
             {
                 var errorResponse = req.CreateResponse(HttpStatusCode.BadRequest);
-                errorResponse.WriteString(string.Join("\n",
+                await errorResponse.WriteStringAsync(string.Join("\n",
                     result.Errors.Select(r => $"{r.Code}:{r.Description}")));
                 return errorResponse;
             }
 
             var token = JwtService.GenerateAccessToken(user);
+            var refreshToken = JwtService.GenerateRefreshToken(user);
             var successResponse = req.CreateResponse(HttpStatusCode.OK);
-            successResponse.WriteString(token);
-
+            var loginResult = new LoginResult
+            {
+                access_token = token,
+                refresh_token = refreshToken,
+                User = new UserDto
+                {
+                    Id = user.Id,
+                    Username = user.UserName,
+                    Email = user.Email,
+                    Phone = user.PhoneNumber,
+                    Name = user.Name
+                }
+            };
+            var bag = DataBag.SerializeWithName(nameof(LoginResult), loginResult);
+            await successResponse.WriteStringAsync(bag);
             return successResponse;
         }
 
-        public class LoginModel
-        {
-            public string Username { get; set; }
-            public string Password { get; set; }
-        }
         [Function(nameof(Anonymous_LoginApi))]
         public async Task<HttpResponseData> Anonymous_LoginApi(
             [HttpTrigger(AuthorizationLevel.Function, "post")] HttpRequestData req,
@@ -67,13 +72,20 @@ namespace OrderApiFun.Funcs
         {
             var log = context.GetLogger(nameof(Anonymous_LoginApi));
 
-            var loginModel = await req.ReadFromJsonAsync<LoginModel>();
+            var b = await req.GetBagAsync();
+            if (b == null)
+            {
+                var errorResponse = req.CreateResponse(HttpStatusCode.BadRequest);
+                await errorResponse.WriteStringAsync("Invalid request.");
+                return errorResponse;
+            }
+            var loginModel = b.Get<LoginDto>(0);
 
             var user = await UserManager.FindByNameAsync(loginModel.Username);
             if (user == null)
             {
                 var errorResponse = req.CreateResponse(HttpStatusCode.BadRequest);
-                errorResponse.WriteString("Invalid username or password.");
+                await errorResponse.WriteStringAsync("Invalid username or password.");
                 return errorResponse;
             }
 
@@ -81,19 +93,28 @@ namespace OrderApiFun.Funcs
             if (!isValidPassword)
             {
                 var errorResponse = req.CreateResponse(HttpStatusCode.BadRequest);
-                errorResponse.WriteString("Invalid username or password.");
+                await errorResponse.WriteStringAsync("Invalid username or password.");
                 return errorResponse;
             }
 
             var token = JwtService.GenerateAccessToken(user);
             var refreshToken = JwtService.GenerateRefreshToken(user);
             var successResponse = req.CreateResponse(HttpStatusCode.OK);
-            await successResponse.WriteAsJsonAsync(new
+            var result = new LoginResult
             {
-                Token = token,
-                Refresh = refreshToken
-            });
-
+                access_token = token,
+                refresh_token = refreshToken,
+                User = new UserDto
+                {
+                    Id = user.Id,
+                    Username = user.UserName,
+                    Email = user.Email,
+                    Phone = user.PhoneNumber,
+                    Name = user.Name
+                }
+            };
+            var bag = DataBag.SerializeWithName(nameof(LoginResult), result);
+            await successResponse.WriteStringAsync(bag);
             return successResponse;
         }
     
@@ -115,15 +136,16 @@ namespace OrderApiFun.Funcs
                 return badRequestResponse;
             }
 
-            var model = await req.ReadFromJsonAsync<RefreshTokenModel>();
-            if (model == null)
+            var bag = await req.GetBagAsync();
+            var username = bag?.Get<string>(0) ?? null;
+            if (bag == null || string.IsNullOrWhiteSpace(username))
             {
                 var badRequestResponse = req.CreateResponse(HttpStatusCode.BadRequest);
                 if (!hasRefreshToken) await badRequestResponse.WriteStringAsync("Username not found!");
                 return badRequestResponse;
             }
 
-            var isValid = await JwtService.ValidateRefreshTokenAsync(refreshToken, model.Username);
+            var isValid = await JwtService.ValidateRefreshTokenAsync(refreshToken, username);
             if(!isValid)
             {
                 log.LogError("Invalid refresh token");
@@ -132,7 +154,7 @@ namespace OrderApiFun.Funcs
                 return badRequestResponse;
             }
 
-            var user = await UserManager.FindByNameAsync(model.Username);
+            var user = await UserManager.FindByNameAsync(username);
             if (user == null)
             {
                 var badRequestResponse = req.CreateResponse(HttpStatusCode.BadRequest);
@@ -144,13 +166,22 @@ namespace OrderApiFun.Funcs
 
             var okResponse = req.CreateResponse(HttpStatusCode.OK);
             okResponse.Headers.Add("Content-Type", "application/json");
-            await okResponse.WriteStringAsync(JsonConvert.SerializeObject(new { access_token = newAccessToken }));
+            var loginResult = new LoginResult
+            {
+                access_token = newAccessToken,
+                refresh_token = refreshToken,
+                User = new UserDto
+                {
+                    Id = user.Id,
+                    Username = user.UserName,
+                    Email = user.Email,
+                    Phone = user.PhoneNumber,
+                    Name = user.Name
+                }
+            };
+            await okResponse.WriteStringAsync(DataBag.SerializeWithName(nameof(loginResult), loginResult));
             return okResponse;
 
-        }
-        private class RefreshTokenModel
-        {
-            public string Username { get; set; }
         }
 
         private string GetValueFromHeader(HttpRequestData req,string header)
@@ -161,15 +192,15 @@ namespace OrderApiFun.Funcs
             return refreshToken;
         }
 
-        [Function(nameof(User_TestApi))]
-        public async Task<HttpResponseData> User_TestApi(
+        [Function(nameof(User_TestUserApi))]
+        public async Task<HttpResponseData> User_TestUserApi(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequestData req, FunctionContext context)
         {
             // 检查是否存在 HttpResponseData 对象
-            if (context.Items.ContainsKey("HttpResponseData"))
+            if (context.Items.TryGetValue("HttpResponseData", out var item))
             {
                 // 如果存在，表示验证失败，直接返回这个 HttpResponseData 对象
-                return (HttpResponseData)context.Items["HttpResponseData"];
+                return (HttpResponseData)item;
             }
 
             var userId = context.Items[Auth.UserId].ToString();
@@ -179,6 +210,5 @@ namespace OrderApiFun.Funcs
             await response.WriteStringAsync($"Hi {user.UserName}!");
             return response;
         }
-
     }
 }

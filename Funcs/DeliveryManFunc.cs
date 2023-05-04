@@ -5,6 +5,7 @@ using System.Net;
 using Microsoft.AspNetCore.Identity;
 using OrderApiFun.Core.Middlewares;
 using OrderDbLib.Entities;
+using OrderHelperLib;
 
 namespace OrderApiFun.Funcs;
 
@@ -38,7 +39,7 @@ public class DeliveryManFunc
         // 返回响应
         var response = req.CreateResponse(HttpStatusCode.Created);
         // 在实际项目中，您可能需要序列化返回的DeliveryMan对象为JSON
-        await response.WriteStringAsync($"DeliveryMan created with ID: {deliveryMan.Id}");
+        await response.WriteStringAsync(DataBag.Serialize($"DeliveryMan created with ID: {deliveryMan.Id}"));
         return response;
     }
 }

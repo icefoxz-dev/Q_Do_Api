@@ -63,6 +63,53 @@ namespace OrderApiFun.Funcs
             return createdResponse;
         }
 
+        [Function(nameof(User_GetAllDeliveryOrders))]
+        public async Task<HttpResponseData> User_GetAllDeliveryOrders(
+            [HttpTrigger(AuthorizationLevel.Function, "post")]
+            HttpRequestData req,
+            FunctionContext context)
+        {
+            var log = context.GetLogger(nameof(User_GetAllDeliveryOrders));
+            log.LogInformation("C# HTTP trigger function processed a request.");
+
+            var userId = context.Items[Auth.UserId].ToString();
+
+            // Retrieve DataBag from request
+            var bag = await req.GetBagAsync();
+
+            // Get the 'limit' and 'page' values from the DataBag
+            var limit = 10;
+            var page = 0;
+
+            try
+            {
+                limit = bag.Get<int>(0);
+                page = bag.Get<int>(1);
+            }
+            catch (Exception _)
+            {
+                // ignored
+            }
+
+            // Retrieve paginated DeliveryOrders for the user from the database using the DeliveryOrderService
+            var deliveryOrders = await DoService.GetDeliveryOrdersAsync(userId, limit, page, log);
+
+            // Check if there are any DeliveryOrders for the user
+            if (deliveryOrders == null || !deliveryOrders.Any())
+            {
+                var notFoundResponse = req.CreateResponse(HttpStatusCode.NotFound);
+                await notFoundResponse.WriteStringAsync("No DeliveryOrders found for the user.");
+                return notFoundResponse;
+            }
+
+            // Convert the DeliveryOrders to a list of DeliveryOrderDto objects
+            var deliveryOrdersDto = deliveryOrders.Select(order => order.Adapt<DeliveryOrderDto>()).ToList();
+
+            // Create an HTTP 200 (OK) response and write the DeliveryOrderDto objects as JSON
+            var okResponse = req.CreateResponse(HttpStatusCode.OK);
+            await okResponse.WriteStringAsync(DataBag.SerializeWithName(nameof(deliveryOrdersDto.GetType), deliveryOrdersDto));
+            return okResponse;
+        }
 
         [Function(nameof(DeliveryMan_AssignDeliveryMan))]
         public async Task<HttpResponseData> DeliveryMan_AssignDeliveryMan(
@@ -75,10 +122,12 @@ namespace OrderApiFun.Funcs
             try
             {
                 var deliveryManId = GetDeliveryManId(context);
-                
-                var deliveryAssignment = await req.ReadFromJsonAsync<DeliveryAssignmentDto>();
 
-                if (deliveryAssignment == null)
+                var bag = await req.GetBagAsync();
+                var oId = bag.Get<string>(0);
+                var orderId = int.Parse(oId);
+
+                if (bag == null)
                 {
                     var errorResponse = req.CreateResponse(HttpStatusCode.BadRequest);
                     await errorResponse.WriteStringAsync("Invalid request payload.");
@@ -86,7 +135,7 @@ namespace OrderApiFun.Funcs
                 }
 
                 //assign deliveryMan
-                await DoService.AssignDeliveryManAsync(deliveryAssignment.DeliveryOrderId, deliveryManId);
+                await DoService.AssignDeliveryManAsync(orderId, deliveryManId);
 
                 var response = req.CreateResponse(HttpStatusCode.OK);
                 await response.WriteStringAsync("Delivery man assigned successfully.");

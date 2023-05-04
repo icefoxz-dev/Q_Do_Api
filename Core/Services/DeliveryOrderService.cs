@@ -213,5 +213,19 @@ namespace OrderApiFun.Core.Services
             await Db.SaveChangesAsync();
         }
 
+        public async Task<DeliveryOrder[]> GetDeliveryOrdersAsync(string? userId, int limit, int page, ILogger log)
+        {
+            log.LogInformation($"GetDeliveryOrders: userId={userId}, limit={limit}, page={page}");
+            page = Math.Max(1, page);
+            return await Db.DeliveryOrders
+                .Include(d=>d.User)
+                .Include(d=>d.DeliveryMan)
+                .Include(d=>d.ReceiverUser)
+                .Where(o => o.UserId == userId && !o.IsDeleted)
+                .OrderByDescending(o => o.CreatedAt)
+                .Skip(limit * (page - 1))
+                .Take(limit)
+                .ToArrayAsync();
+        }
     }
 }

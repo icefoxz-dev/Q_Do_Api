@@ -5,7 +5,6 @@ using Azure.Identity;
 using Microsoft.IdentityModel.Tokens;
 using OrderApiFun.Core.Tokens;
 using OrderDbLib.Entities;
-using OrderLib;
 
 namespace OrderApiFun.Core.Services;
 

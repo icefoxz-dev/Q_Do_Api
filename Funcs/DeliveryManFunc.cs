@@ -1,13 +1,13 @@
-﻿using Microsoft.Azure.Functions.Worker.Http;
-using Microsoft.Azure.Functions.Worker;
-using OrderApiFun.Core.Services;
-using System.Net;
+﻿using System.Net;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Azure.Functions.Worker;
+using Microsoft.Azure.Functions.Worker.Http;
 using OrderApiFun.Core.Middlewares;
+using OrderApiFun.Core.Services;
 using OrderDbLib.Entities;
 using OrderHelperLib;
 
-namespace OrderApiFun.Funcs;
+namespace Do_Api.Funcs;
 
 public class DeliveryManFunc
 {

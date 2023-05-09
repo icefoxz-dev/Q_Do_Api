@@ -1,29 +1,31 @@
 ﻿using System.Net;
 using Mapster;
-using Microsoft.Azure.Functions.Worker.Http;
-using Microsoft.Azure.Functions.Worker;
-using OrderApiFun.Core.Services;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Azure.Functions.Worker;
+using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Extensions.Logging;
 using OrderApiFun.Core.Middlewares;
+using OrderApiFun.Core.Services;
 using OrderDbLib.Entities;
 using OrderHelperLib;
 using OrderHelperLib.DtoModels.DeliveryOrders;
 using Utls;
 
-namespace OrderApiFun.Funcs
+namespace Do_Api.Funcs
 {
     public class DeliveryOrderFunc
     {
+        private LingauManager LingauManager { get; }
         private DeliveryOrderService DoService { get; }
         private DeliveryManManager DmManager { get; }
         private UserManager<User> UserManager { get; }
 
-        public DeliveryOrderFunc(DeliveryOrderService doService, UserManager<User> userManager, DeliveryManManager dmManager)
+        public DeliveryOrderFunc(DeliveryOrderService doService, UserManager<User> userManager, DeliveryManManager dmManager, LingauManager lingauManager)
         {
             DoService = doService;
             UserManager = userManager;
             DmManager = dmManager;
+            LingauManager = lingauManager;
         }
 
         [Function(nameof(User_CreateDeliveryOrder))]
@@ -111,6 +113,47 @@ namespace OrderApiFun.Funcs
             return okResponse;
         }
 
+        [Function(nameof(User_PayDeliveryOrderByCredit))]
+        public async Task<HttpResponseData> User_PayDeliveryOrderByCredit(
+            [HttpTrigger(AuthorizationLevel.Function, "post")]
+            HttpRequestData req,
+            FunctionContext context)
+        {
+            var log = context.GetLogger(nameof(User_PayDeliveryOrderByCredit));
+            log.LogInformation("C# HTTP trigger function processed a request.");
+
+            // Retrieve the request body
+            var userId = context.Items[Auth.UserId].ToString();
+            DeliveryOrder? order;
+            try
+            {
+                var bag = await req.GetBagAsync();
+                var deliveryOrderId = bag.Get<int>(0);
+                order = await DoService.GetDeliveryOrderAsync(userId, deliveryOrderId);
+            }
+            catch (Exception e)
+            {
+                log.LogWarning($"Invalid request body.\n{e}");
+                var badRequestResponse = req.CreateResponse(HttpStatusCode.BadRequest);
+                await badRequestResponse.WriteStringAsync("Invalid request body.");
+                return badRequestResponse;
+            }
+
+            var userLingau = await LingauManager.GetLingauAsync(userId);
+            if (order.PaymentInfo.Price > userLingau.Credit)
+            {
+                var badRequestResponse = req.CreateResponse(HttpStatusCode.BadRequest);
+                await badRequestResponse.WriteStringAsync("Not enough Lingau.");
+                return badRequestResponse;
+            }
+
+            await DoService.PayDeliveryOrderByLingauAsync(userId, order, log);
+
+            var response = req.CreateResponse(HttpStatusCode.OK);
+            await response.WriteStringAsync(DataBag.Serialize(userLingau.Adapt<LingauDto>()));
+            return response;
+        }
+
         [Function(nameof(DeliveryMan_AssignDeliveryMan))]
         public async Task<HttpResponseData> DeliveryMan_AssignDeliveryMan(
             [HttpTrigger(AuthorizationLevel.Function, "post")]
@@ -195,7 +238,7 @@ namespace OrderApiFun.Funcs
                 // Assuming you have a static instance of the DeliveryOrderService
                 await DoService.UpdateOrderStatusByDeliveryManAsync(deliveryManId, dto.DeliveryOrderId, status);
                 var response = req.CreateResponse(HttpStatusCode.OK);
-                await response.WriteStringAsync(message);
+                await response.WriteStringAsync(DataBag.Serialize(message));
                 return response;
             }
             catch (Exception ex)

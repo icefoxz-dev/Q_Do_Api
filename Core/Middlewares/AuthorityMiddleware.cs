@@ -1,4 +1,5 @@
 ﻿using System.Net;
+using Do_Api.Funcs;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Azure.Functions.Worker.Middleware;
@@ -6,7 +7,6 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 using OrderApiFun.Core.Services;
 using OrderApiFun.Core.Tokens;
-using OrderApiFun.Funcs;
 
 namespace OrderApiFun.Core.Middlewares
 {

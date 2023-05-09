@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 using OrderApiFun.Core.Middlewares;
 using OrderApiFun.Core.Services;
 using OrderDbLib.Entities;
@@ -11,7 +10,7 @@ using OrderHelperLib;
 using OrderHelperLib.DtoModels.Users;
 using Utls;
 
-namespace OrderApiFun.Funcs
+namespace Do_Api.Funcs
 {
     public class LoginFunc
     {
@@ -33,7 +32,11 @@ namespace OrderApiFun.Funcs
             var b = await req.GetBagAsync();
             var data = b.Get<RegisterDto>(0);
 
-            var user = new User { UserName = data.Username, Email = data.Email };
+            var user = new User();
+            user.UserName = data.Username;
+            user.Email = data.Email;
+            user.Lingau = Entity.Instance<Lingau, string>(Guid.NewGuid().ToString());
+            user.Lingau.User = user;
             var result = await UserManager.CreateAsync(user, data.Password);
 
             if (!result.Succeeded)

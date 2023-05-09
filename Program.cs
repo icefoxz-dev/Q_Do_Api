@@ -18,7 +18,7 @@ var host = new HostBuilder()
     .ConfigureServices(s =>
     {
         // 配置数据库连接字符串
-        var connectionString = Environment.GetEnvironmentVariable("SqlConnectionString");
+        var connectionString = Environment.GetEnvironmentVariable("ConnectionStrings:DefaultConnection");
         // 添加 ApplicationDbContext 服务
         s.AddDbContext<OrderDbContext>(
             op =>
@@ -58,7 +58,8 @@ var host = new HostBuilder()
         //Business Services
         s.AddScoped<DeliveryOrderService>();
         s.AddScoped<DeliveryManManager>();
+        s.AddScoped<LingauManager>();
     })
     .Build();
 
-host.Run();
+await host.RunAsync();

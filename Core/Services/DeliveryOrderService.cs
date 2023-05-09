@@ -1,5 +1,4 @@
-﻿using OrderLib;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using OrderDbLib;
@@ -13,12 +12,14 @@ namespace OrderApiFun.Core.Services
     {
         private OrderDbContext Db { get; }
         private UserManager<User> UserManager { get; }
+        private LingauManager LingauManager { get; }
         private DeliveryManManager DeliveryManManager { get; }
-        public DeliveryOrderService(OrderDbContext db, UserManager<User> userManager, DeliveryManManager deliveryManManager)
+        public DeliveryOrderService(OrderDbContext db, UserManager<User> userManager, DeliveryManManager deliveryManManager, LingauManager lingauManager)
         {
             Db = db;
             UserManager = userManager;
             DeliveryManManager = deliveryManManager;
+            LingauManager = lingauManager;
         }
 
         public async Task<DeliveryOrder> CreateDeliveryOrderAsync(string? userId, DeliveryOrder newOrder, ILogger log)
@@ -218,14 +219,39 @@ namespace OrderApiFun.Core.Services
             log.LogInformation($"GetDeliveryOrders: userId={userId}, limit={limit}, page={page}");
             page = Math.Max(1, page);
             return await Db.DeliveryOrders
-                .Include(d=>d.User)
                 .Include(d=>d.DeliveryMan)
                 .Include(d=>d.ReceiverUser)
+                .Include(d=>d.User)
+                .ThenInclude(u=>u.Lingau)
                 .Where(o => o.UserId == userId && !o.IsDeleted)
                 .OrderByDescending(o => o.CreatedAt)
                 .Skip(limit * (page - 1))
                 .Take(limit)
                 .ToArrayAsync();
+        }
+
+        public async Task<DeliveryOrder?> GetDeliveryOrderAsync(string? userId, int deliveryOrderId)
+        {
+            return await Db.DeliveryOrders
+                .Include(d => d.User)
+                .ThenInclude(u => u.Lingau)
+                .FirstOrDefaultAsync(o => o.UserId == userId && o.Id == deliveryOrderId && !o.IsDeleted);
+        }
+
+        public async Task PayDeliveryOrderByLingauAsync(string userId, DeliveryOrder order, ILogger log)
+        {
+            log.LogInformation($"PayDeliveryOrderByLingau: userId={userId}, orderId={order.Id}");
+            var user = await UserManager.FindByIdAsync(userId);
+            if (user == null)
+                throw new InvalidOperationException("User not found");
+            var lingau = await LingauManager.GetLingauAsync(userId);
+            var price = order.PaymentInfo.Price;
+            if (price < 0) throw new InvalidOperationException($"Invalid price: {price} from order.{order.Id}");
+            if (lingau.Credit < price)
+            {
+                throw new InvalidOperationException("Insufficient balance");
+            }
+            await LingauManager.UpdateLingauBalanceAsync(userId, price, log);
         }
     }
 }
